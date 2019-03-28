@@ -75,10 +75,13 @@ module trafficUp(h) {
 
 module trafficDown(h) {
      fingers(h);
+     
      difference() {
          box(h=h);
          hope(h=h, d=30);
+         fingers(h=h, up=-1);
     }
+    
  }
  
 module head(h) {

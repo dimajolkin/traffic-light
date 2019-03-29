@@ -107,12 +107,38 @@ translate([0, h/2 - dy , 0])
 cube([h - dx, 1, h + dx], center=true);
 }
 
+module bottom(h) {
+    
+      h1=20;
+   
+    
+     difference() {
+         cube([h, h, h1], center=true);
+         
+         translate([0, 0, 5])
+         cube([h - 5, h - 5, 20], center=true);
+         
+           color("blue")
+     translate([h/2 - 5, -22 - 9,  -h1/2 + 6])
+     cube([10, 10, 5]);
+         
+     color("red")
+     translate([h/2 - 5, 0, -h1/2 + 6]) //2 mm 
+     cube([30, 10, 12]);
+    
+     }
+    
+     
+}
 
 module body() {
     
 //translate([0, 0, h])
 //trafficUp(h=h);
-trafficDown(h=h);  
+//trafficDown(h=h);  
+
+//translate([0, 0, -h/2])
+bottom(h);
     }
 
 module main(h=200) {

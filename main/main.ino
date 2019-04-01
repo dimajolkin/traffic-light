@@ -16,7 +16,7 @@ SoftwareSerial ESPserial(3, 2); // TX | RX
 
 String configs[] = {
   "wifi.name=Dealersocket_Airport",
-  "wifi.password=Spring1.618",
+  "wifi.password=*****",
   //  "teamCity.host=http://guest:guest@172.30.21.47:8111",
   //  "teamCity.project=E6_Engine",
   //  "teamCity.branch=epic/E-06013/story/B-64996-fca-win-sticker-button"

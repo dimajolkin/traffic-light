@@ -1,1 +1,1 @@
-esptool.py --port /dev/ttyUSB0 --baud 115200 write_flash --verify -fs 8m  0x00000 ../../boot_v1.6.bin  0x01000 user1.1024.new.2.bin  0x81000 user2.1024.new.2.bin  0xfc000 ../../esp_init_data_default.bin  0xfe000 ../../blank.bin
+esptool --port /dev/ttyUSB0 --baud 115200 write_flash --verify -fs 8m  0x00000 ../../boot_v1.6.bin  0x01000 user1.1024.new.2.bin  0x81000 user2.1024.new.2.bin  0xfc000 ../../esp_init_data_default.bin  0xfe000 ../../blank.bin

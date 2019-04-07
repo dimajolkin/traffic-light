@@ -1,154 +1,196 @@
+#include <Arduino.h>
 #include <SoftwareSerial.h>
+
 #include <Arduino.h>
 #include "lib.h"
+#include "wifi.h"
+#include "traffic.h"
 
 #define PIN_RED 10
 #define PIN_GREEN 8
 
-#define STATUS_RED 2
-#define STATUS_GREEN 3
-#define STATUS_NONE 4
+#ifndef HAVE_HWSERIAL1
+#include "SoftwareSerial.h"
+SoftwareSerial ESPserial(7, 8); // RX, TX
+#endif
 
-int status = STATUS_NONE; //green
-boolean blinking = false;
+String ssid = "Kracozabra";            // your network SSID (name)
+String pass = "09655455";        // your network password
 
-SoftwareSerial ESPserial(3, 2); // TX | RX
-
-String configs[] = {
-  "wifi.name=Dealersocket_Airport",
-  "wifi.password=*****",
-  //  "teamCity.host=http://guest:guest@172.30.21.47:8111",
-  //  "teamCity.project=E6_Engine",
-  //  "teamCity.branch=epic/E-06013/story/B-64996-fca-win-sticker-button"
-};
-
-
-class Lumen {
-  protected:
-    int pin;
-    int status = 0;
-  public:
-    Lumen(int pin): pin(pin) {}
-    void attach() {
-      pinMode(pin, OUTPUT);
-      off();
-    }
-
-    void on() {
-      if (status == 1) {
-        return;
-      }
-      status = 1;
-      digitalWrite(pin, HIGH);   // зажигаем светодиод
-    }
-
-    void off() {
-      if (status == 0) {
-        return;
-      }
-
-      status = 0;
-      digitalWrite(pin, LOW);    // выключаем светодиод
-    }
-
-};
-
-class Traffic {
-  protected:
-    Lumen _red;
-    Lumen _green;
-    int status = 0;
-  public:
-    Traffic(Lumen red, Lumen green): _red(red), _green(green) {}
-
-    void red() {
-      status = 0;
-      _red.on();
-      _green.off();
-    }
-
-    void green() {
-      status = 1;
-      _red.off();
-      _green.on();
-    }
-
-    void blink() {
-      if (status == 0) {
-        green();
-      } else {
-        red();
-      }
-    }
-
-};
-
+int reqCount = 0;
 
 Lumen red(PIN_RED);
 Lumen green(PIN_GREEN);
 Traffic traffic(red, green);
 
-void check() {
+//WiFiEspServer server(80);
+Wifi wifi(&ESPserial);
+WiFiEspClient client;
 
-  delay(5000);
-  Serial.println("Check RED.");
-  red.on();
-  delay(2000);
-  red.off();
-  delay(2000);
+class Request {
 
-  Serial.println("Check Green.");
-  green.on();
-  delay(2000);
-  green.off();
-  delay(2000);
+  protected:
+    boolean sender = false;
 
-  Serial.println("Completion.");
-  red.on();
-  green.on();
-  delay(2000);
-  red.off();
-  green.off();
-  delay(2000);
-}
+  public:
+    void send() {
 
+      sender = false;
+      client.stop();
+      while (client.connected()) {
+        Serial.println("Wait client disconnect");
+      }
+
+      // if you get a connection, report back via serial
+      if (client.connect("example.com", 80)) {
+        Serial.println("Connected to server");
+        // Make a HTTP request
+        client.println("GET / HTTP/1.1");
+        client.println("Host: example.com");
+        client.println("Connection: close");
+        client.println();
+        
+        sender = true;
+      }
+    }
+
+    
+
+    String response() {
+      // read headers
+      while(client.connected()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") {
+          break;
+          }
+       }
+
+       String answer = "";
+       while(client.available()) {
+        //String line = 
+        char c = client.read();
+        //answer += client.read();
+        Serial.print(c);
+       }
+
+        
+        client.stop();
+
+        return answer;
+//      if (!sender) {
+//        return "";
+//      }
+//      String answer = "";
+//      while (true) {
+//        // if there are incoming bytes available
+//        // from the server, read them and print them
+//
+//        while (client.available()) {
+//          char c = client.read();
+//          Serial.print(c);
+//          answer.concat(c);
+//        }
+//
+//        // if the server's disconnected, stop the client
+//        if (!client.connected()) {
+//          client.stop();
+//          break;
+//        }
+//      }
+//
+//      return answer;
+    }
+};
+
+Request request;
 void setup()
 {
-  red.attach();
-  green.attach();
-  Serial.begin(115200);     // communication with the host computer
-  ESPserial.begin(115200);
+  Serial.begin(9600);
+  Serial.println("Init");
 
-  Serial.println("Remember to to set Both NL & CR in the serial monitor.");
-  Serial.println("Ready");
+  traffic.setup();
 
-  check();
+  wifi.setup();
+  while (!wifi.isConnect()) {
+    wifi.connect(ssid, pass);
+  }
+  wifi.printStatus();
+
+  // start the web server on port 80
+  //server.begin();
+
+  Serial.println();
+  Serial.println("Starting connection to server...");
+
+  
 }
 
-void loop()
-{
-  // listen for communication from the ESP8266 and then write it to the serial monitor
-  if ( ESPserial.available() > 0)   {
-    String msg = ESPserial.readString();
-    if (contains(msg, "[ANSWER]")) {
-      if (contains(msg, "red")) {
-        status = STATUS_RED;
-      } else if (contains(msg, "green")) {
-        status = STATUS_GREEN;
-      }
-    } else if (contains(msg, "[HTTP]")) {
-      Serial.println( msg );
-    } else {
-      Serial.println("Undefined msg: " + msg);
-    }
-  }
+void loop() {
+  Serial.println("Send request in example.com");
+  
+  request.send();
+  String response = request.response();
+  Serial.println("begin");
+  Serial.println(response);
+  Serial.println("end");
 
-  if (status == STATUS_RED) {
-    traffic.red();
-  } else if (status == STATUS_GREEN) {
-    traffic.green();
-  } else {
-    traffic.blink();
-    delay(1000);
-  }
+  delay(5000);
+
 }
+
+//void loop2()
+//{
+//  // listen for incoming clients
+//  WiFiEspClient client = server.available();
+//  if (client) {
+//    Serial.println("New client");
+//    // an http request ends with a blank line
+//    boolean currentLineIsBlank = true;
+//    while (client.connected()) {
+//      if (client.available()) {
+//        char c = client.read();
+//        Serial.write(c);
+//        // if you've gotten to the end of the line (received a newline
+//        // character) and the line is blank, the http request has ended,
+//        // so you can send a reply
+//        if (c == '\n' && currentLineIsBlank) {
+//          Serial.println("Sending response");
+//
+//          // send a standard http response header
+//          // use \r\n instead of many println statements to speedup data send
+//          client.print(
+//            "HTTP/1.1 200 OK\r\n"
+//            "Content-Type: text/html\r\n"
+//            "Connection: close\r\n"  // the connection will be closed after completion of the response
+//            "Refresh: 20\r\n"        // refresh the page automatically every 20 sec
+//            "\r\n");
+//          client.print("<!DOCTYPE HTML>\r\n");
+//          client.print("<html>\r\n");
+//          client.print("<h1>Hello World!</h1>\r\n");
+//          client.print("Requests received: ");
+//          client.print(++reqCount);
+//          client.print("<br>\r\n");
+//          client.print("Analog input A0: ");
+//          client.print(analogRead(0));
+//          client.print("<br>\r\n");
+//          client.print("</html>\r\n");
+//          break;
+//        }
+//        if (c == '\n') {
+//          // you're starting a new line
+//          currentLineIsBlank = true;
+//        }
+//        else if (c != '\r') {
+//          // you've gotten a character on the current line
+//          currentLineIsBlank = false;
+//        }
+//      }
+//    }
+//    // give the web browser time to receive the data
+//    delay(10);
+//
+//    // close the connection:
+//    client.stop();
+//    Serial.println("Client disconnected");
+//  }
+//}

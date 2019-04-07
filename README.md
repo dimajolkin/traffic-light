@@ -1,4 +1,11 @@
 
+#Arduino Lib for ESP
+
+https://github.com/bportaluri/WiFiEsp
+
+# Arduino uno R3
+https://arduino-kit.ru/product/arduino-uno-r3-s-wi-fi-esp8266
+
 
 https://www.deviceplus.com/how-tos/arduino-guide/esp8266-setup-tutorial-using-arduino/
 

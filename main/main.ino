@@ -5,6 +5,7 @@
 #include "lib.h"
 #include "wifi.h"
 #include "traffic.h"
+#include "server.h"
 
 #define PIN_RED 10
 #define PIN_GREEN 8
@@ -25,84 +26,9 @@ Traffic traffic(red, green);
 
 //WiFiEspServer server(80);
 Wifi wifi(&ESPserial);
-WiFiEspClient client;
 
-class Request {
+HttpServer server;
 
-  protected:
-    boolean sender = false;
-
-  public:
-    void send() {
-
-      sender = false;
-      client.stop();
-      while (client.connected()) {
-        Serial.println("Wait client disconnect");
-      }
-
-      // if you get a connection, report back via serial
-      if (client.connect("example.com", 80)) {
-        Serial.println("Connected to server");
-        // Make a HTTP request
-        client.println("GET / HTTP/1.1");
-        client.println("Host: example.com");
-        client.println("Connection: close");
-        client.println();
-        
-        sender = true;
-      }
-    }
-
-    
-
-    String response() {
-      // read headers
-      while(client.connected()) {
-        String line = client.readStringUntil('\n');
-        if (line == "\r") {
-          break;
-          }
-       }
-
-       String answer = "";
-       while(client.available()) {
-        //String line = 
-        char c = client.read();
-        //answer += client.read();
-        Serial.print(c);
-       }
-
-        
-        client.stop();
-
-        return answer;
-//      if (!sender) {
-//        return "";
-//      }
-//      String answer = "";
-//      while (true) {
-//        // if there are incoming bytes available
-//        // from the server, read them and print them
-//
-//        while (client.available()) {
-//          char c = client.read();
-//          Serial.print(c);
-//          answer.concat(c);
-//        }
-//
-//        // if the server's disconnected, stop the client
-//        if (!client.connected()) {
-//          client.stop();
-//          break;
-//        }
-//      }
-//
-//      return answer;
-    }
-};
-
-Request request;
 void setup()
 {
   Serial.begin(9600);
@@ -121,17 +47,14 @@ void setup()
 
   Serial.println();
   Serial.println("Starting connection to server...");
-
-  
 }
 
 void loop() {
   Serial.println("Send request in example.com");
   
-  request.send();
-  String response = request.response();
+  Response response = server.get("example.com", 80, "/");
   Serial.println("begin");
-  Serial.println(response);
+  Serial.println(response.getBody());
   Serial.println("end");
 
   delay(5000);

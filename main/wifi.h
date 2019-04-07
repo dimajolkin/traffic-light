@@ -157,14 +157,3 @@ class Wifi {
       return WiFi.localIP();
     }
 };
-
-class WifiServer {
-  protected:
-    int port;
-  public:
-    WifiServer(int port): port(port) {
-
-
-    }
-
-};

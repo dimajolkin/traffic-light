@@ -1,10 +1,10 @@
 
 class Lumen {
   protected:
-    int pin;
-    int status = 0;
+    byte pin;
+    byte status = 0;
   public:
-    Lumen(int pin): pin(pin) {}
+    Lumen(byte pin): pin(pin) {}
     void attach() {
       pinMode(pin, OUTPUT);
       off();
@@ -31,31 +31,31 @@ class Lumen {
 
 class Traffic {
   protected:
-    Lumen _red;
-    Lumen _green;
-    int status = 0;
+    Lumen *_red;
+    Lumen *_green;
+    boolean status = false;
   public:
-    Traffic(Lumen red, Lumen green): _red(red), _green(green) {}
+    Traffic(Lumen *red, Lumen *green): _red(red), _green(green) {}
 
     void setup() {
-      _red.attach();
-      _green.attach();
+      _red->attach();
+      _green->attach();
     }
 
     void red() {
-      status = 0;
-      _red.on();
-      _green.off();
+      status = false;
+      _red->on();
+      _green->off();
     }
 
     void green() {
-      status = 1;
-      _red.off();
-      _green.on();
+      status = true;
+      _red->off();
+      _green->on();
     }
 
     void blink() {
-      if (status == 0) {
+      if (status == false) {
         green();
       } else {
         red();
@@ -65,23 +65,23 @@ class Traffic {
     void check() {
       delay(5000);
       Serial.println("Check RED.");
-      _red.on();
+      _red->on();
       delay(2000);
-      _red.off();
+      _red->off();
       delay(2000);
 
       Serial.println("Check Green.");
-      _green.on();
+      _green->on();
       delay(2000);
-      _green.off();
+      _green->off();
       delay(2000);
 
       Serial.println("Completion.");
-      _red.on();
-      _green.on();
+      _red->on();
+      _green->on();
       delay(2000);
-      _red.off();
-      _green.off();
+      _red->off();
+      _green->off();
       delay(2000);
     }
 };

@@ -1,13 +1,9 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
 
 
 class WifiSettings {
   protected:
-    String name = "Dealersocket_Airport";
-    String password = "Spring1.618";
+    String name = "Kracozabra";
+    String password = "09655455";
   public:
 
     boolean isValid() {
@@ -49,24 +45,4 @@ class WifiSettings {
         delay(1000);
       }
     }
-};
-
-class ESPWifi {
-  protected:
-     ESP8266WiFiMulti wifi;
-  public:
-
-    ESPWifi() {}
-
-    void configuration(WifiSettings wifisettings) {
-        WiFi.mode(WIFI_STA);
-        
-      //WiFiMulti.addAP("Dealersocket_Airport", "Spring1.618");
-      wifi.addAP(wifisettings.getName().c_str(), wifisettings.getPassword().c_str());
-    }
-
-    boolean isConnect() {
-      return wifi.run() == WL_CONNECTED;
-    }
-
 };

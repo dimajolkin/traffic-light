@@ -1,46 +1,45 @@
 
 
-class TeamCitySettings: public AbstractSetting {
+class TeamCitySettings {
 
+  protected:
+    String url = "http://example.com";
   public:
-    String getName() {
-      return "teamCity";
+
+    boolean isValid() {
+      return url != "";
     }
 
-    TeamCitySettings() {
-      config["host"] = "http://guest:guest@172.30.21.47:8111";
-      config["project"] = "E6_Engine";
-      config["branch"] = "develop";
+    void serialInput() {
+      while (!isValid()) {
+        if (Serial.available() > 0) {
+          String command = Serial.readString();
+          if (contains(command, "teamCity.url=")) {
+            url = command.substring(command.indexOf("=") + 1);
+            Serial.println("OK: Set name url: " + url);
+          }
+        }
+        //Serial.println("Failed: Wait wifi settings wifi.name=<name> wifi.password=<pasword>");
+        delay(1000);
+      }
+    }
+
+    String getUrl()
+    {
+      return url;
     }
 };
 
 class TeamCity {
   protected:
-    String host;
-    String branch;
-    String project;
+    String url;
 
   public:
     TeamCity(TeamCitySettings settings) {
-      host = settings.get("host");
-      branch = settings.get("branch");
-      project = settings.get("project");
+      url = settings.getUrl();
     }
 
     String getUrl() {
-      return host + "/httpAuth/app/rest/builds/?locator=buildType:" + project + ",state:any,branch:" + branch + ",count:1";
+      return url;
     }
-
-    String parseXml(String xml) {
-      if (contains(xml, "status=\"SUCCESS\"")) {
-        return "green";
-      }
-
-      if (contains(xml, "status=\"FAILURE\"")) {
-        return "red";
-      }
-
-      return "none";
-    }
-
 };

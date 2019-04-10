@@ -1,74 +1,91 @@
+#include <Arduino.h>
+
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+
+#include <ESP8266HTTPClient.h>
+
+#include <WiFiClient.h>
 
 #include "lib.h"
-#include "teamcity.h"
 #include "wifi.h"
+#include "teamcity.h"
 
-/**
-   wifi.name=<>
-   wifi.password=<>
-*/
+ESP8266WiFiMulti WiFiMulti;
 
-//ESP8266WiFiMulti wifi;
-ESPWifi wifi;
-WifiSettings wifisettings;
-TeamCitySettings tmsettings;
 
-TeamCity *tm;
+WifiSettings ws;
+TeamCitySettings ts;
 
 void setup() {
-  Serial.begin(115200);
-  // Serial.setDebugOutput(true);
+  Serial.begin(9600);
+  Serial.println();
+  Serial.println();
+  Serial.println();
+
   for (uint8_t t = 4; t > 0; t--) {
     Serial.printf("[SETUP] WAIT %d...\n", t);
     Serial.flush();
     delay(1000);
   }
-  
-  Serial.println("[SETUP] Ready");
-  
-  wifisettings.serialInput();
-  tmsettings.serialInput();
-  
-  tm = new TeamCity(tmsettings);
 
-  wifi.configuration(wifisettings);
+  ws.serialInput();
+  ts.serialInput();
 
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());   //You can g
+  WiFi.mode(WIFI_STA);
+  Serial.printf("[SETUP] NET NAME %s...\n", ws.getName().c_str());
+  Serial.printf("[SETUP] NET PSWD %s...\n", ws.getPassword().c_str());
+  Serial.printf("[SETUP] H %s...\n", ts.getUrl().c_str());
+
+  WiFiMulti.addAP(ws.getName().c_str(), ws.getPassword().c_str());
+  while (WiFiMulti.run() != WL_CONNECTED) {
+    Serial.println("[SETUP] WAIT CONNECT");
+    delay(1000);
+  }
+
+  Serial.println("[SETUP] CONNECT");
+
+  Serial.print("[SETUP] IP: ");
+  Serial.println(WiFi.localIP());
 }
-
+//"http://jigsaw.w3.org/HTTP/connection.html"
 void loop() {
   // wait for WiFi connection
-  if (wifi.isConnect()) {
+  if ((WiFiMulti.run() == WL_CONNECTED)) {
 
     WiFiClient client;
+
     HTTPClient http;
-    
-    //Serial.print("[HTTP] begin...\n");
-    http.begin(client, tm->getUrl());
-    
-    //Serial.println(tm->getUrl());
-    //Serial.print("[HTTP] GET...\n");
-    // start connection and send HTTP header
-    int httpCode = http.GET();
-    // Serial.println(httpCode);
 
-    // httpCode will be negative on error
-    if (httpCode > 0) {
-      // HTTP header has been send and Server response header has been handled
-      //Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    Serial.print("[HTTP] begin...\n");
+    if (http.begin(ts.getUrl().c_str())) {
+      //http.addHeader("Accept", "application/json");
+      //http.setAuthorization("guest", "guest");
 
-      // file found at server
-      if (httpCode == HTTP_CODE_OK) {
-        Serial.println("[ANSWER] " + tm->parseXml(http.getString()));
+      Serial.print("[HTTP] GET...\n");
+      // start connection and send HTTP header
+      int httpCode = http.GET();
+
+      // httpCode will be negative on error
+      if (httpCode > 0) {
+        // HTTP header has been send and Server response header has been handled
+        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+
+        // file found at server
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+          Serial.println("[ANSWER]");
+          String payload = http.getString();
+          Serial.println(payload);
+          Serial.println("[END]");
+        }
+      } else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
       }
-    } else {
-      Serial.printf("[HTTP] GET... failed, error: %s\r\n", http.errorToString(httpCode).c_str());
-      //Serial.printf("[HTTP] GET... failed \r\n");
-    }
 
-    http.end();
+      http.end();
+    } else {
+      Serial.printf("[HTTP} Unable to connect\n");
+    }
   }
 
   delay(10000);

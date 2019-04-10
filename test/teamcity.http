@@ -1,0 +1,21 @@
+# For a quick start check out our HTTP Requests collection (Tools|HTTP Client|Open HTTP Requests Collection).
+#
+# Following HTTP Request Live Templates are available:
+# * 'gtrp' and 'gtr' create a GET request with or without query parameters;
+# * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
+# * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
+
+GET http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,branch:master,count:2
+
+###
+
+GET /httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:2
+Accept: application/json
+Host: 192.168.0.2:8111
+Authorization: Basic YWRtaW46YWRtaW4=
+
+###
+
+GET example.com:80 HTTP/1.1
+
+###

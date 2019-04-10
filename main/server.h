@@ -1,41 +1,27 @@
 
-class Request {
-
-  protected:
-    boolean sender = false;
+struct  Url {
+    String auth;
     String host;
-    int port;
-    String url;
-  public:
-    Request(String host, int port, String url): host(host), port(port), url(url) {}
-};
-
-class Response {
-  protected:
-    String rawBody;
-  public:
-    Response(String rawBody): rawBody(rawBody) {}
-
-    String getBody() {
-      return rawBody;
-    }
+    unsigned int port;
+    String path;
 };
 
 class HttpServer {
   protected:
     WiFiEspClient *client;
 
-    boolean send(String host, uint32_t port, String url) {
+    inline boolean send(Url *url) {
       client->stop();
       while (client->connected()) {
         Serial.println("Wait client disconnect");
       }
 
       // if you get a connection, report back via serial
-      if (client->connect(host.c_str(), port)) {
-        Serial.println("Connected to server");
-        client->println("GET " + url + " HTTP/1.1");
-        client->println("Host: " + host);
+      if (client->connect(url->host.c_str(), url->port)) {
+        client->println("GET " + url->path + " HTTP/1.1");
+        client->println("Accept: application/json");
+        client->println("Host: " + url->host + ":" + String(url->port));
+        client->println("Authorization: " + url->auth);
         client->println("Connection: close");
         client->println();
         return true;
@@ -49,28 +35,31 @@ class HttpServer {
       client = new WiFiEspClient();
     }
 
-    Response get(String host, String url) {
-        return get(host, 80, url);
-    }
-    
-    Response get(String host, uint32_t port, String url) {
-      send(host, port, url);
+    String get(Url *url) {
+      send(url);
       // read headers
       while (client->connected()) {
-        String line = client->readStringUntil('\n');
-        if (line == "\r") {
+        if (client->readStringUntil('\n') == "\r") {
           break;
         }
       }
 
       String rawBody = "";
+      boolean isStart = false;
       while (client->available()) {
-        String line = client->readStringUntil('\n');
-        if (line == "") continue;
-        rawBody += line;
+        char c = client->read();
+        if (c == '\n' || c == '\r') continue;
+
+        if (c == '{') {
+          isStart = true;
+        }
+
+        if (isStart) {
+          rawBody += c;
+        }
       }
 
       client->stop();
-      return Response(rawBody);
+      return rawBody;
     }
 };

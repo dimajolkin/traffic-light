@@ -1,8 +1,8 @@
 #include <Arduino.h>
-
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-
+#include <iostream>
 #include <ESP8266HTTPClient.h>
 
 #include <WiFiClient.h>
@@ -13,16 +13,40 @@
 
 ESP8266WiFiMulti WiFiMulti;
 
-
 WifiSettings ws;
 TeamCitySettings ts;
+DynamicJsonDocument doc(2048);
+
+
+String send(String json) {
+  DeserializationError error = deserializeJson(doc, json);
+  if (error) {
+    Serial.println(F("Failed to read file, using default configuration"));
+    return "[]";
+  }
+
+  JsonArray builds = doc["build"];
+  String answer = "[";
+  for (JsonObject build : builds) {
+    const char* number = build["number"];
+    const char* status = build["status"];
+    const char* state = build["state"];
+    
+    answer += "{";
+    answer += "\"id\":" + String(number) + ",";
+    answer += "\"status\":\"" + String(status) + "\",";
+    answer += "\"state\":\"" + String(state) + "\"";
+    answer += "},";
+  }
+  answer.remove(answer.length()-1);
+  answer += "]"; //drop last ,
+
+  return answer;
+}
 
 void setup() {
   Serial.begin(9600);
   Serial.println();
-  Serial.println();
-  Serial.println();
-
   for (uint8_t t = 4; t > 0; t--) {
     Serial.printf("[SETUP] WAIT %d...\n", t);
     Serial.flush();
@@ -31,7 +55,6 @@ void setup() {
 
   ws.serialInput();
   ts.serialInput();
-
   WiFi.mode(WIFI_STA);
   Serial.printf("[SETUP] NET NAME %s...\n", ws.getName().c_str());
   Serial.printf("[SETUP] NET PSWD %s...\n", ws.getPassword().c_str());
@@ -48,7 +71,7 @@ void setup() {
   Serial.print("[SETUP] IP: ");
   Serial.println(WiFi.localIP());
 }
-//"http://jigsaw.w3.org/HTTP/connection.html"
+
 void loop() {
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
@@ -58,24 +81,17 @@ void loop() {
     HTTPClient http;
 
     Serial.print("[HTTP] begin...\n");
-    if (http.begin(ts.getUrl().c_str())) {
-      //http.addHeader("Accept", "application/json");
-      //http.setAuthorization("guest", "guest");
+    if (http.begin(client, ts.getUrl().c_str())) {
+      //http.setAuthorization("admin", "admin");
+      http.addHeader("Accept", "application/json");
 
       Serial.print("[HTTP] GET...\n");
-      // start connection and send HTTP header
       int httpCode = http.GET();
-
-      // httpCode will be negative on error
       if (httpCode > 0) {
-        // HTTP header has been send and Server response header has been handled
         Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-
-        // file found at server
         if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-          Serial.println("[ANSWER]");
-          String payload = http.getString();
-          Serial.println(payload);
+          Serial.println("[BEGIN]");
+          Serial.println(send(http.getString()));
           Serial.println("[END]");
         }
       } else {
@@ -84,7 +100,7 @@ void loop() {
 
       http.end();
     } else {
-      Serial.printf("[HTTP} Unable to connect\n");
+      Serial.printf("[HTTP] Unable to connect\n");
     }
   }
 

@@ -9,13 +9,12 @@ GET http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildT
 
 ###
 
-GET /httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:2
+GET http://192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:2
 Accept: application/json
-Host: 192.168.0.2:8111
 Authorization: Basic YWRtaW46YWRtaW4=
 
 ###
 
-GET example.com:80 HTTP/1.1
+GET http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:2
 
 ###

@@ -3,7 +3,7 @@
 class TeamCitySettings {
 
   protected:
-    String url = "http://example.com";
+    String url = "http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:3";
   public:
 
     boolean isValid() {

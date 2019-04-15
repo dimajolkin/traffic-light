@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 #include <iostream>
@@ -8,101 +8,77 @@
 #include <WiFiClient.h>
 
 #include "lib.h"
-#include "wifi.h"
 #include "teamcity.h"
+#include "trafficLight.h"
+
+#define DELAY_REQUEST 10000
+
+String configs[] = {
+  "wifi.name=Dealersocket_Airport",
+  "wifi.password=*****",
+  //  "teamCity.host=http://guest:guest@172.30.21.47:8111",
+  //  "teamCity.project=E6_Engine",
+  //  "teamCity.branch=epic/E-06013/story/B-64996-fca-win-sticker-button"
+};
+
+//#define NETWORK_NAME "Kracozabra"
+//#define NETWORK_PASSWORD "09655455"
+//#define TS_URL "http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:1"
+
+#define NETWORK_NAME "Dealersocket_Airport"
+#define NETWORK_PASSWORD "Spring1.618"
+#define TS_URL "http://guest:guest@172.30.21.47:8111/httpAuth/app/rest/builds/?locator=buildType:E6_Engine,state:any,branch:develop,count:1"
+
+#define out Serial
 
 ESP8266WiFiMulti WiFiMulti;
 
-WifiSettings ws;
-TeamCitySettings ts;
-DynamicJsonDocument doc(2048);
+TeamCitySettings ts(String(TS_URL));
+TrafficLight traffic;
 
-
-String send(String json) {
-  DeserializationError error = deserializeJson(doc, json);
-  if (error) {
-    Serial.println(F("Failed to read file, using default configuration"));
-    return "[]";
-  }
-
-  JsonArray builds = doc["build"];
-  String answer = "[";
-  for (JsonObject build : builds) {
-    const char* number = build["number"];
-    const char* status = build["status"];
-    const char* state = build["state"];
-    
-    answer += "{";
-    answer += "\"id\":" + String(number) + ",";
-    answer += "\"status\":\"" + String(status) + "\",";
-    answer += "\"state\":\"" + String(state) + "\"";
-    answer += "},";
-  }
-  answer.remove(answer.length()-1);
-  answer += "]"; //drop last ,
-
-  return answer;
-}
+//{"http": "connection refused"}
 
 void setup() {
   Serial.begin(9600);
-  Serial.println();
   for (uint8_t t = 4; t > 0; t--) {
-    Serial.printf("[SETUP] WAIT %d...\n", t);
+    out.println("{\"setup\": \"wait\"}");
+    delay(500);
     Serial.flush();
-    delay(1000);
   }
 
-  ws.serialInput();
-  ts.serialInput();
   WiFi.mode(WIFI_STA);
-  Serial.printf("[SETUP] NET NAME %s...\n", ws.getName().c_str());
-  Serial.printf("[SETUP] NET PSWD %s...\n", ws.getPassword().c_str());
-  Serial.printf("[SETUP] H %s...\n", ts.getUrl().c_str());
-
-  WiFiMulti.addAP(ws.getName().c_str(), ws.getPassword().c_str());
+  out.printf("{\"setup\":\"confirm\"}\n");
+  WiFiMulti.addAP(NETWORK_NAME, NETWORK_PASSWORD);
   while (WiFiMulti.run() != WL_CONNECTED) {
-    Serial.println("[SETUP] WAIT CONNECT");
-    delay(1000);
+    out.println("{\"setup\": \"wait connect\"}");
+    delay(500);
   }
 
-  Serial.println("[SETUP] CONNECT");
-
-  Serial.print("[SETUP] IP: ");
-  Serial.println(WiFi.localIP());
+  IPAddress myIP = WiFi.localIP();
+  String ipStr = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
+  out.printf("{\"setup\": \"connect\", \"ip\":\"%s\"}\n", ipStr.c_str());
 }
 
 void loop() {
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
-
     WiFiClient client;
-
     HTTPClient http;
-
-    Serial.print("[HTTP] begin...\n");
     if (http.begin(client, ts.getUrl().c_str())) {
-      //http.setAuthorization("admin", "admin");
       http.addHeader("Accept", "application/json");
-
-      Serial.print("[HTTP] GET...\n");
       int httpCode = http.GET();
       if (httpCode > 0) {
-        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
         if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-          Serial.println("[BEGIN]");
-          Serial.println(send(http.getString()));
-          Serial.println("[END]");
+          out.println(traffic.answer(http.getString()));
         }
       } else {
-        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        out.printf("{\"http\": \"%s\"}\n", http.errorToString(httpCode).c_str());
       }
-
       http.end();
     } else {
-      Serial.printf("[HTTP] Unable to connect\n");
+      out.println("{\"http\": \"failed\"}");
     }
   }
 
-  delay(10000);
+  delay(DELAY_REQUEST);
 }

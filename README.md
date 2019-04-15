@@ -4,6 +4,7 @@
 https://github.com/bportaluri/WiFiEsp
 https://github.com/bblanchon/ArduinoJson
 https://wandbox.org/permlink/HBrUTPgJmauExToR
+https://playground.arduino.cc/Code/Timer1/
 
 # Arduino uno R3
 https://arduino-kit.ru/product/arduino-uno-r3-s-wi-fi-esp8266

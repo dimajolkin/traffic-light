@@ -3,29 +3,32 @@
 class TeamCitySettings {
 
   protected:
-    String url = "http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:3";
+   // String url = "http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:1";
+    String url = "";
   public:
+
+    TeamCitySettings(String url): url(url) {}
 
     boolean isValid() {
       return url != "";
     }
 
     void serialInput() {
+      delay(500);
       while (!isValid()) {
         if (Serial.available() > 0) {
           String command = Serial.readString();
           if (contains(command, "teamCity.url=")) {
             url = command.substring(command.indexOf("=") + 1);
-            Serial.println("OK: Set name url: " + url);
+            url.replace("\n", "");
+            Serial.printf("{\"setup\": \"input_ok\"}\n");
           }
         }
-        //Serial.println("Failed: Wait wifi settings wifi.name=<name> wifi.password=<pasword>");
-        delay(1000);
+        delay(500);
       }
     }
 
-    String getUrl()
-    {
+    String getUrl() {
       return url;
     }
 };

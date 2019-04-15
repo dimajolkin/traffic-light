@@ -1,66 +1,48 @@
+//#include <ArduinoJson.h>
 #include <SoftwareSerial.h>
-#include <ArduinoJson.h>
-
-#include "wifi.h"
 #include "traffic.h"
-#include "server.h"
-#include "teamcity.h"
+#include <TimerOne.h>
 
-#define PIN_RED 10
-#define PIN_GREEN 8
+#define PIN_RED 8
+#define PIN_GREEN 10
 
-#ifndef HAVE_HWSERIAL1
-#include "SoftwareSerial.h"
-SoftwareSerial ESPserial(7, 8); // RX, TX
-#endif
+#define ESP_PIN_RX 6
+#define ESP_PIN_TX 7
 
-String ssid = "Kracozabra";            // your network SSID (name)
-String pass = "09655455";        // your network password
-
+SoftwareSerial esp(ESP_PIN_TX, ESP_PIN_RX);
 Lumen red(PIN_RED);
 Lumen green(PIN_GREEN);
 Traffic traffic(&red, &green);
 
-Wifi wifi(&ESPserial);
-HttpServer server;
-
-Url *teamcityUrl = new Url();
-
-//StaticJsonDocument<200> doc;
-DynamicJsonDocument doc(200);
-
 void setup()
 {
   Serial.begin(9600);
-//  Serial.println("Init");
-  
-  teamcityUrl->auth = "Basic YWRtaW46YWRtaW4=";
-  teamcityUrl->host = "192.168.0.2";
-  teamcityUrl->port = 8111;
-  teamcityUrl->path = "/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:1";
+  esp.begin(9600);
+  Serial.println("Init Traffic-light v0.1");
+  Timer1.initialize((500000 * 2));         // initialize timer1, and set a 1/2 second period             // setup pwm on pin 9, 50% duty cycle
+  Timer1.attachInterrupt(callback);  // attaches callback() as a timer overflow interrupt
 
   traffic.setup();
-  wifi.setup();
-  while (!wifi.isConnect()) {
-    wifi.connect(ssid, pass);
-  }
-  wifi.printStatus();
+  traffic.check();
+  esp.flush();
 }
 
+
+String json = "";
+String command = traffic.getCommand();
+
+void callback() {
+  traffic.handler();
+}
+
+String cmd;
 void loop() {
-  String response = server.get(teamcityUrl);
-  Serial.println(response);
-
-  TeamCity tc(teamcityUrl);
-  // Deserialize the JSON document
-  DeserializationError error = deserializeJson(doc, response.c_str());
-  // Test if parsing succeeds.
-  if (error) {
-    Serial.print("deserializeJson() failed: ");
-    Serial.println(error.c_str());
-  } else {
-    tc.prepare(doc);
+  if (esp.available() > 0) {
+    json = esp.readString();
+    json.trim();
+    cmd = traffic.parse("command", json);
+    traffic.setCommand(cmd);
+    Serial.println(cmd);
   }
-
-  delay(5000);
+  delay(1000);
 }

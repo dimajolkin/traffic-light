@@ -14,7 +14,7 @@
 #define DELAY_REQUEST 10000
 
 String configs[] = {
-  "wifi.name=Dealersocket_Airport",
+  "wifi.name=*****",
   "wifi.password=*****",
   //  "teamCity.host=http://guest:guest@172.30.21.47:8111",
   //  "teamCity.project=E6_Engine",
@@ -25,8 +25,8 @@ String configs[] = {
 //#define NETWORK_PASSWORD "09655455"
 //#define TS_URL "http://admin:admin@192.168.0.2:8111/httpAuth/app/rest/builds/?locator=buildType:TrafficLight_Build,state:any,count:1"
 
-#define NETWORK_NAME "Dealersocket_Airport"
-#define NETWORK_PASSWORD "Spring1.618"
+#define NETWORK_NAME "****"
+#define NETWORK_PASSWORD "****"
 #define TS_URL "http://guest:guest@172.30.21.47:8111/httpAuth/app/rest/builds/?locator=buildType:E6_Engine,state:any,branch:develop,count:1"
 
 #define out Serial

@@ -118,7 +118,7 @@ module one_fastener(h, h_bottom=30, h_floor=3, h_wall, dx=1, dy=1) {
 
 module one_hope_fastener(h, h_bottom, h_wall, dx, dy) {
          color("yellow")
-         translate([dx * (h/2 - h_wall), dy * (h/2 - h_wall), -10])
+         translate([dx * (h/2 - h_wall), dy * (h/2 - h_wall), -20])
          cylinder(h_bottom + 10, 1 ,1, $fn=30);
 }
 
@@ -131,6 +131,7 @@ module fastener(h, h_bottom=30, h_floor=3, h_wall) {
 
 module bottom(h, h_bottom=30, h_floor=3) {
      h_wall = 3;
+        
      fastener(h=h, h_bottom=h_bottom, h_floor=h_floor, h_wall=h_wall);
      difference() {
          cube([h, h, h_bottom], center=true);
@@ -146,9 +147,7 @@ module bottom(h, h_bottom=30, h_floor=3) {
          one_hope_fastener(h=h, h_bottom=h_bottom, h_wall=h_wall, dx=-1, dy=-1);
      }
      
-     translate([h/2 - 0.2, -h/2 + 20, h_floor])
-     rotate([90, 0, 90]) 
-     text("TraficLight v0.1", 5);
+    
 }
 
 

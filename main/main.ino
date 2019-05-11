@@ -1,3 +1,9 @@
+/**
+ * 1 - инициализация мигание всеми фонарями
+ * 2 - зелёный - состояние ветки зелёное
+ * 3 - красный - состояние ветки красное
+ * 4 - мигающий красный - ошибка с серверка
+ */
 #include <SoftwareSerial.h>
 #include <TimerOne.h>
 #include "lumen.h"
@@ -33,49 +39,17 @@ SoftwareSerial esp(ESP_PIN_TX, 0);
 
 #define COMMAND_UNDEFINED "undefined"
 
-#define SIZE 4
-#define SERIAL_SPEED 9600
 
+#define SERIAL_SPEED 9600 
+
+#define SIZE 4
 Lumen green[] = {Lumen(G1), Lumen(G2), Lumen(G3), Lumen(G4)};
 Lumen red[] = {Lumen(R1), Lumen(R2), Lumen(R3), Lumen(R4)};
-LumenFacade map_init[] = {
-  LumenFacade(&green[0], LumenFacade::TICK),
-  LumenFacade(&green[1], LumenFacade::TICK),
-  LumenFacade(&green[2], LumenFacade::TICK),
-  LumenFacade(&green[3], LumenFacade::TICK),
-  LumenFacade(&red[0], LumenFacade::TICK),
-  LumenFacade(&red[1], LumenFacade::TICK),
-  LumenFacade(&red[2], LumenFacade::TICK),
-  LumenFacade(&red[3], LumenFacade::TICK)
-};
-
-LumenFacade map_red[] = {
-  LumenFacade(&red[0], LumenFacade::OFF),
-  LumenFacade(&red[1], LumenFacade::OFF),
-  LumenFacade(&red[2], LumenFacade::OFF),
-  LumenFacade(&red[3], LumenFacade::OFF),
-  LumenFacade(&red[0], LumenFacade::ON),
-  LumenFacade(&red[1], LumenFacade::ON),
-  LumenFacade(&red[2], LumenFacade::ON),
-  LumenFacade(&red[3], LumenFacade::ON)
-};
-
-LumenFacade map_green[] = {
-  LumenFacade(&green[0], LumenFacade::OFF),
-  LumenFacade(&green[1], LumenFacade::OFF),
-  LumenFacade(&green[2], LumenFacade::OFF),
-  LumenFacade(&green[3], LumenFacade::OFF),
-  LumenFacade(&green[0], LumenFacade::ON),
-  LumenFacade(&green[1], LumenFacade::ON),
-  LumenFacade(&green[2], LumenFacade::ON),
-  LumenFacade(&green[3], LumenFacade::ON)
-};
-
 
 String parse(const String name, const String json);
 
-
 String cmd = COMMAND_INIT;
+String newCmd = cmd;
 void setup()
 {
   for (int i = 0; i < SIZE; i++) {
@@ -92,37 +66,42 @@ void setup()
 }
 
 int i = 0;
+void onUpdateCmd() {
+  
+}
+
 void callback() {
-  if (i > 7) i = 0;
+  if (i > 4) {
+    if (cmd != newCmd) onUpdateCmd();
+    cmd = newCmd;
+    i = 0;
+  };
+  
   if (cmd == COMMAND_INIT) {
-    map_init[i].exec();
+    topAndDown(i);
   } else if (cmd == COMMAND_WAIT_CONNECT) {
-    map_init[i].exec();
+    topAndDown(i);
   } else if (cmd == COMMAND_CONNECT) {
-    map_init[i].exec();
-  } else if (cmd == COMMAND_SERVER_FAILED) {
-    map_init[i].exec();
-  } else if (cmd == COMMAND_UNDEFINED) {
-    map_init[i].exec();
-  } else if (cmd == COMMAND_TM_ANSWER_SUCCESS) {
-    for (int k = 0; k < 4; k++) {
-      red[k].off();
-      green[k].on();
-    }
-  } else if (cmd == COMMAND_TM_ANSWER_SUCCESS_RUNNING) {
-    blinkGreen(i);
-  } else if (cmd == COMMAND_TM_ANSWER_FAILURE) {
     for (int k = 0; k < 4; k++) {
       red[k].on();
-      green[k].off();
+      green[k].on();
     }
-  } else if (cmd == COMMAND_TM_ANSWER_FAILURE_RUNNING) {
+  } else if (cmd == COMMAND_SERVER_FAILED) {
     blinkRed(i);
+  } else if (cmd == COMMAND_UNDEFINED) {
+    blinkRed(i);
+  } else if (cmd == COMMAND_TM_ANSWER_SUCCESS) {
+    enadledGreen();
+  } else if (cmd == COMMAND_TM_ANSWER_SUCCESS_RUNNING) {
+    enadledGreen();
+  } else if (cmd == COMMAND_TM_ANSWER_FAILURE) {
+    enadledRed();
+  } else if (cmd == COMMAND_TM_ANSWER_FAILURE_RUNNING) {
+    enadledRed();
   } else if (cmd == COMMAND_TM_ANSWER_NONE) {
-    map_red[i].exec();
+    blinkRed(i);
   } else {
-    map_red[i].exec();
-    map_green[i].exec();
+    blinkRed(i);
   }
 
   i++;
@@ -132,11 +111,26 @@ void loop() {
     if (esp.available() > 0) {
       String json = esp.readString();
       json.trim();
-      cmd = parse("status", json);
+      newCmd = parse("status", json);
       Serial.println(cmd);
     }
 
   delay(300);
+}
+
+void enadledGreen() {
+  for (int k = 0; k < 4; k++) {
+      red[k].off();
+      green[k].on();
+    }
+}
+
+
+void enadledRed() {
+  for (int k = 0; k < 4; k++) {
+      red[k].on();
+      green[k].off();
+    }
 }
 
 void disabled() {
